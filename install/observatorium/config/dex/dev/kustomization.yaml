@@ -1,0 +1,14 @@
+bases:
+- ../bases
+secretGenerator:
+- name: dex
+  namespace: <namespace>
+  files:
+  - config.yaml=config.generated.yaml
+- name: dex-tls
+  namespace: <namespace>
+  files:
+  - tls.crt=tls.crt
+  - tls.key=tls.key
+generatorOptions:
+  disableNameSuffixHash: true

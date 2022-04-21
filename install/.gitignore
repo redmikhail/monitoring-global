@@ -1,0 +1,4 @@
+.idea
+.vscode
+.DS_Store
+install/observatorium/config/*/*/*.generated.yamlmak

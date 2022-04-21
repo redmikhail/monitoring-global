@@ -1,0 +1,18 @@
+bases:
+- ../bases
+secretGenerator:
+- name: loki-objectstorage
+  namespace: <namespace>
+  literals:
+  - endpoint=http://minio:minio123@minio.observatorium-minio.svc.cluster.local.:9000/loki
+- name: thanos-objectstorage
+  namespace: <namespace>
+  files:
+  - thanos.yaml=thanos.generated.yaml
+- name: observatorium-xyz-tls
+  namespace: <namespace>
+  files:
+  - cert.pem=cert.pem
+  - key.pem=key.pem
+generatorOptions:
+  disableNameSuffixHash: true
