@@ -1,5 +1,9 @@
 SHELL=bash
 export OBSERVATORIUM_APPS_URL := $(shell oc get --namespace openshift-ingress-operator ingresscontrollers/default --output jsonpath='{.status.domain}{"\n"}')
+export OBSERVATORIUM_APPS_URL := $(shell oc get --namespace openshift-ingress-operator ingresscontrollers/default --output jsonpath='{.status.domain}{"\n"}')
+export DEX_TOKEN_URL := http://dex-dex.$(OBSERVATORIUM_APPS_URL)
+export OBSERVATORIUM_ROUTE_HOST ?=observatorium-observatorium.$(OBSERVATORIUM_APPS_URL)
+export GATEWAY_URL := https://$(OBSERVATORIUM_ROUTE_HOST)
 export DEX_NAMESPACE?=dex
 export MINIO_NAMESPACE?=observatorium-minio
 export OBSERVATORIUM_NAMESPACE?=observatorium
