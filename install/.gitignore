@@ -1,4 +1,4 @@
 .idea
 .vscode
 .DS_Store
-#install/observatorium/config/*/*/*.generated.yaml
+install/observatorium/config/*/*/*.generated.yaml
