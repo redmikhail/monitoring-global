@@ -8,7 +8,7 @@ secretGenerator:
 - name: dex-tls
   namespace: <namespace>
   files:
-  - tls.crt=tls.crt
-  - tls.key=tls.key
+  - tls.crt=tls.generated.crt
+  - tls.key=tls.generated.key
 generatorOptions:
   disableNameSuffixHash: true

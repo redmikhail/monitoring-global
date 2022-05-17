@@ -1,4 +1,3 @@
 resources:
 - route.yaml
-- observatorium-xyz-tls-cm.yaml
-- observatorium-cr-temp.yaml
+- observatorium-cr.yaml

@@ -1,7 +1,6 @@
 SHELL=bash
 export OBSERVATORIUM_APPS_URL := $(shell oc get --namespace openshift-ingress-operator ingresscontrollers/default --output jsonpath='{.status.domain}{"\n"}')
-export OBSERVATORIUM_APPS_URL := $(shell oc get --namespace openshift-ingress-operator ingresscontrollers/default --output jsonpath='{.status.domain}{"\n"}')
-export DEX_TOKEN_URL := http://dex-dex.$(OBSERVATORIUM_APPS_URL)
+export DEX_TOKEN_URL := dex-dex.$(OBSERVATORIUM_APPS_URL)
 export OBSERVATORIUM_ROUTE_HOST ?=observatorium-observatorium.$(OBSERVATORIUM_APPS_URL)
 export GATEWAY_URL := https://$(OBSERVATORIUM_ROUTE_HOST)
 export DEX_NAMESPACE?=dex
@@ -36,15 +35,27 @@ endif
 
 #Deploy Dex for Dev environment uzing kustomize. 
 .PHONY: create/dex/dev
-create/dex/dev:
+create/dex/dev: create/certs/dev
 	@echo "Create dex in: $(DEX_NAMESPACE) for Dev environment"
-#	Nothing to replace but keeping the command for consistency, add token replacement based on prod 
-	@cat config/dex/dev/config.yaml | \
-	sed -e "s/<dex_tenant_client_secret>/$(DEX_TENANT_CLIENT_SECRET)/g"|sed 's/<dex_admin_pass_hash>/\"$(shell htpasswd -bnBC 10 "admin"  $(DEX_ADMIN_PASS) | cut -d ":" -f 2 | sed "s/2y/2a/;s/\\$$/\\\\$$/g;s/\./\\\\./g;s#\/#\\\/#g")\"/g'\
+	@echo "$(DEX_TOKEN_URL)"
+	@cp config/certs/tls.generated.crt config/certs/tls.generated.key config/certs/rootCA.generated.crt config/dex/dev
+	@cat config/dex/dev/config.yaml |\
+	sed -e "s/<dex_issuer_url>/https\:\/\/$(DEX_TOKEN_URL)\/dex/g;s/<dex_tenant_client_secret>/$(DEX_TENANT_CLIENT_SECRET)/g"|sed 's/<dex_admin_pass_hash>/\"$(shell htpasswd -bnBC 10 "admin"  $(DEX_ADMIN_PASS) | cut -d ":" -f 2 | sed "s/2y/2a/;s/\\$$/\\\\$$/g;s/\./\\\\./g;s#\/#\\\/#g")\"/g'\
 	 > config/dex/dev/config.generated.yaml
 	@oc kustomize config/dex/dev |sed 's/<namespace>/$(DEX_NAMESPACE)/g' |oc apply -f -
 
-
+.PHONY: create/certs/dev
+create/certs/dev:
+	@echo "Generating certificate"
+	@cat config/certs/cert_req.conf |\
+	sed -e "s/<dex_issuer_url>/$(DEX_TOKEN_URL)/g;s/<observatorium_host_url>/$(OBSERVATORIUM_ROUTE_HOST)/g"	> config/certs/cert_req.generated.conf
+	@openssl genrsa  -out config/certs/rootCA.generated.key 4096
+	@openssl req -x509 -new -nodes -key config/certs/rootCA.generated.key -subj "/C=US/ST=NC/O=Red Hat, Inc./CN=Observatorium" -sha256 -days 3652 -out config/certs/rootCA.generated.crt
+	@openssl genrsa -out config/certs/tls.generated.key 2048
+	@openssl req -new -key rsa:2048 -key config/certs/tls.generated.key -out config/certs/tls.generated.csr -config config/certs/cert_req.generated.conf -reqexts 'v3_req'
+	@openssl req -in config/certs/tls.generated.csr -text -noout
+	@openssl x509  -req -in config/certs/tls.generated.csr  -CA config/certs/rootCA.generated.crt -CAkey config/certs/rootCA.generated.key -CAcreateserial -out config/certs/tls.generated.crt -days 730 -sha256 -extfile config/certs/cert_req.generated.conf -extensions v3_req
+	@openssl x509 -in config/certs/tls.generated.crt -text -noout
 
 # Deploy MINIO to different environments
 
@@ -93,8 +104,9 @@ endif
 .PHONY: create/observatorium/dev
 create/observatorium/dev:
 	@echo "create observatorium in: $(OBSERVATORIUM_NAMESPACE) for Dev Environment"
+	@cp config/certs/tls.generated.crt config/certs/tls.generated.key config/certs/rootCA.generated.crt config/observatorium/dev
 	cat config/observatorium/dev/thanos.yaml  > config/observatorium/dev/thanos.generated.yaml
-	oc kustomize config/observatorium/dev |sed 's/<namespace>/$(OBSERVATORIUM_NAMESPACE)/g;s/<hosturl>/$(OBSERVATORIUM_ROUTE_HOST)/g' |oc apply -f -
+	oc kustomize config/observatorium/dev |sed 's/<dex_issuer_url>/$(DEX_TOKEN_URL)/g;s/<namespace>/$(OBSERVATORIUM_NAMESPACE)/g;s/<hosturl>/$(OBSERVATORIUM_ROUTE_HOST)/g' |oc apply -f -
 
 .PHONY: create/observatorium-up
 create/observatorium-up:
@@ -135,6 +147,7 @@ clean:
 	@oc delete namespace $(MINIO_NAMESPACE)
 	@oc delete namespace $(OBSERVATORIUM_NAMESPACE)
 	@echo "Done uninstalling observatorium"
+#	@find ./config -type f -name "*.generated.*" -exec rm {} \;
 
 
 all: create/dex create/minio create/crds create/operator create/observatorium

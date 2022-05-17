@@ -12,7 +12,12 @@ secretGenerator:
 - name: observatorium-xyz-tls
   namespace: <namespace>
   files:
-  - cert.pem=cert.pem
-  - key.pem=key.pem
+  - cert.pem=tls.generated.crt
+  - key.pem=tls.generated.key
+configMapGenerator:
+- name: observatorium-xyz-tls
+  namespace: <namespace>
+  files:
+  - ca.pem=rootCA.generated.crt
 generatorOptions:
   disableNameSuffixHash: true

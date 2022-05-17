@@ -2,7 +2,7 @@ apiVersion: core.observatorium.io/v1alpha1
 kind: Observatorium
 metadata:
   name: observatorium-xyz
-  namespace: <namespace>
+  namespace: observatorium
   labels:
     app.kubernetes.io/instance: observatorium-xyz
     app.kubernetes.io/name: observatorium-cr
@@ -16,9 +16,9 @@ spec:
       memoryLimitMb: 1024
       replicas: 1
       version: 1.6.3-alpine
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     shards: 1
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
     volumeClaimTemplate:
       spec:
         accessModes:
@@ -27,8 +27,9 @@ spec:
           requests:
             storage: 50Gi
   loki:
-    image: 'docker.io/grafana/loki:2.1.0'
+    image: docker.io/grafana/loki:2.2.0
     replicas:
+      compactor: 1
       distributor: 1
       ingester: 1
       querier: 1
@@ -44,12 +45,12 @@ spec:
             storage: 1G
   compact:
     enableDownsampling: false
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     replicas: 1
     retentionResolution1h: 1s
     retentionResolution5m: 1s
     retentionResolutionRaw: 14d
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
     volumeClaimTemplate:
       spec:
         accessModes:
@@ -58,9 +59,9 @@ spec:
           requests:
             storage: 50Gi
   receivers:
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     replicas: 1
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
     volumeClaimTemplate:
       spec:
         accessModes:
@@ -69,20 +70,20 @@ spec:
           requests:
             storage: 50Gi
   query:
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     replicas: 1
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
   apiQuery:
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
-    version: master-2020-08-12-70f89d83
+    image: quay.io/thanos/thanos:v0.24.0
+    version: v0.24.0
   hashrings:
     - hashring: default
       tenants: []
   thanosReceiveController:
-    image: 'quay.io/observatorium/thanos-receive-controller:master-2020-02-06-b66e0c8'
-    version: master-2020-02-06-b66e0c8
+    image: quay.io/observatorium/thanos-receive-controller:master-2021-04-28-ee165b6
+    version: master-2021-04-28-ee165b6
   api:
-    image: 'quay.io/observatorium/observatorium:master-2020-11-02-v0.1.1-192-ge324057'
+    image: quay.io/observatorium/api:main-2022-03-03-v0.1.2-139-gb3a1918
     rbac:
       roleBindings:
         - name: test
@@ -103,12 +104,13 @@ spec:
             - test
     replicas: 1
     tenants:
-      - id: 1610b0c3-c509-4592-a256-a1871353dbfare
+      - id: 1610b0c3-c509-4592-a256-a1871353dbfa
         name: test
         oidc:
           clientID: test
           clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
-          issuerURL: 'http://dex.dex.svc.cluster.local:5556/dex'
+          issuerCAPath: /var/run/tls/ca.pem
+          issuerURL: 'https://<dex_issuer_url>/dex'
           usernameClaim: email
     tls:
       caKey: ca.pem
@@ -116,16 +118,15 @@ spec:
       configMapName: observatorium-xyz-tls
       keyKey: key.pem
       secretName: observatorium-xyz-tls
-      serverName: observatorium-xyz-observatorium-api.observatorium.svc.cluster.local
-    version: master-2020-11-02-v0.1.1-192-ge324057
+    version: main-2022-03-03-v0.1.2-139-gb3a1918
   queryFrontend:
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     replicas: 1
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
   rule:
-    image: 'quay.io/thanos/thanos:master-2020-08-12-70f89d83'
+    image: quay.io/thanos/thanos:v0.24.0
     replicas: 1
-    version: master-2020-08-12-70f89d83
+    version: v0.24.0
     volumeClaimTemplate:
       spec:
         accessModes:
@@ -133,6 +134,7 @@ spec:
         resources:
           requests:
             storage: 50Gi
+  securityContext: {}
   objectStorageConfig:
     loki:
       accessKeyIdKey: aws_access_key_id
