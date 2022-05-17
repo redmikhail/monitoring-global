@@ -1,0 +1,9 @@
+.idea
+.vscode
+.DS_Store
+install/observatorium/config/*/**/*.generated.yaml
+install/observatorium/config/*/**/*.generated.crt
+install/observatorium/config/*/**/*.generated.csr
+install/observatorium/config/*/**/*.generated.key
+install/observatorium/config/*/**/*.generated.conf
+install/observatorium/config/*/**/*.generated.srl
